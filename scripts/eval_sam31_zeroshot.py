@@ -99,25 +99,30 @@ def run(proc, samples, ds_name: str) -> dict:
     pred_dir = RESULTS / "preds" / APPROACH / ds_name
     pred_dir.mkdir(parents=True, exist_ok=True)
 
+    def _run_one(arr_rgb):
+        pil = Image.fromarray(arr_rgb)
+        with torch.inference_mode(), torch.amp.autocast("cuda", dtype=torch.bfloat16):
+            st = proc.set_image(pil)
+            o = proc.set_text_prompt(state=st, prompt="polyp")
+        m = o["masks"].cpu().numpy()
+        if m.ndim == 4: m = m[:, 0]
+        s = o["scores"].float().cpu().numpy()
+        if len(m) == 0:
+            return np.zeros(arr_rgb.shape[:2], dtype=bool)
+        top = int(s.argmax())
+        return m[top].astype(bool)
+
     for image_id, rgb, gt in tqdm(samples, desc=f"{APPROACH}/{ds_name}"):
         rgb_in, crop = preprocess(rgb)
-        pil = Image.fromarray(rgb_in)
         t0 = time.perf_counter()
-        with torch.inference_mode(), torch.amp.autocast("cuda", dtype=torch.bfloat16):
-            state = proc.set_image(pil)
-            out = proc.set_text_prompt(state=state, prompt="polyp")
+        pred_local = _run_one(rgb_in)
+        pred_flipped = _run_one(rgb_in[:, ::-1].copy())[:, ::-1]
+        pred_local = pred_local | pred_flipped  # union of orig + flipped
         dt = time.perf_counter() - t0
 
-        masks = out["masks"].cpu().numpy()
-        if masks.ndim == 4:
-            masks = masks[:, 0]
-        scores = out["scores"].float().cpu().numpy()
-
-        if len(masks) == 0:
+        if pred_local.shape == (0, 0):
             pred = np.zeros_like(gt, dtype=bool)
         else:
-            top = int(scores.argmax())
-            pred_local = masks[top].astype(bool)
             if crop is None:
                 pred = pred_local
             else:
