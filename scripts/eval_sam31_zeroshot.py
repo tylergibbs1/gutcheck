@@ -137,6 +137,13 @@ def run(proc, samples, ds_name: str) -> dict:
                                   interpolation=cv2.INTER_NEAREST) > 0
             kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15))
             pred = cv2.morphologyEx(pred.astype(np.uint8), cv2.MORPH_CLOSE, kernel) > 0
+            # fill interior holes (flood-fill from border inverted)
+            if pred.any():
+                flood = pred.astype(np.uint8).copy()
+                h2, w2 = flood.shape
+                mask_ff = np.zeros((h2 + 2, w2 + 2), np.uint8)
+                cv2.floodFill(flood, mask_ff, (0, 0), 2)
+                pred = (flood != 2)
 
         per_dice.append(dice(pred, gt))
         per_iou.append(iou(pred, gt))
