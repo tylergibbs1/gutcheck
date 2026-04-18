@@ -1,0 +1,21 @@
+{
+  "tag": "apr18",
+  "description": "Push SAM 3.1 zero-shot mean Dice on CVC-ClinicDB (and not-regress on Kvasir) via preprocessing, prompting, and mask selection. Model frozen.",
+  "metric_name": "combined_dice",
+  "metric_direction": "higher",
+  "secondary_metrics": ["kvasir_dice", "cvc_dice"],
+  "run_command": "bash scripts/_run_experiment.sh",
+  "metric_extract_grep": "^METRICS",
+  "modifiable_files": [
+    "scripts/eval_sam31_zeroshot.py"
+  ],
+  "readonly_files": [
+    "gutcheck/data.py",
+    "gutcheck/metrics.py",
+    "gutcheck/__init__.py",
+    "scripts/_common.py",
+    "results/failure_analysis/FINDING.md"
+  ],
+  "timeout_seconds": 300,
+  "no_new_dependencies": true
+}
