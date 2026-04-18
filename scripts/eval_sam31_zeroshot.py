@@ -130,6 +130,8 @@ def run(proc, samples, ds_name: str) -> dict:
             if pred.shape != gt.shape:
                 pred = cv2.resize(pred.astype(np.uint8), (gt.shape[1], gt.shape[0]),
                                   interpolation=cv2.INTER_NEAREST) > 0
+            kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15))
+            pred = cv2.morphologyEx(pred.astype(np.uint8), cv2.MORPH_CLOSE, kernel) > 0
 
         per_dice.append(dice(pred, gt))
         per_iou.append(iou(pred, gt))
