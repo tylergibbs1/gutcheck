@@ -103,7 +103,7 @@ def run(proc, samples, ds_name: str) -> dict:
         pil = Image.fromarray(arr_rgb)
         with torch.inference_mode(), torch.amp.autocast("cuda", dtype=torch.bfloat16):
             st = proc.set_image(pil)
-            o = proc.set_text_prompt(state=st, prompt="polyp")
+            o = proc.set_text_prompt(state=st, prompt="growth")
         m = o["masks"].cpu().numpy()
         if m.ndim == 4: m = m[:, 0]
         s = o["scores"].float().cpu().numpy()
