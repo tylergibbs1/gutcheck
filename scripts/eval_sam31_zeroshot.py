@@ -35,6 +35,31 @@ from sam3.model_builder import build_sam3_image_model
 from sam3.model.sam3_image_processor import Sam3Processor
 
 
+def detect_scope_bbox(rgb: np.ndarray, dark_thresh: int = 20, min_frac: float = 0.1):
+    gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
+    bright = (gray > dark_thresh).astype(np.uint8)
+    h, w = gray.shape
+    if bright.mean() > 0.97:
+        return 0, 0, h, w
+    n, _, stats, _ = cv2.connectedComponentsWithStats(bright, connectivity=8)
+    if n <= 1:
+        return 0, 0, h, w
+    best = max(range(1, n), key=lambda i: stats[i, cv2.CC_STAT_AREA])
+    x, y, bw, bh, area = stats[best]
+    if area / (h * w) < min_frac:
+        return 0, 0, h, w
+    pad = 4
+    return max(0, y - pad), max(0, x - pad), min(h, y + bh + pad), min(w, x + bw + pad)
+
+
+def preprocess(rgb: np.ndarray):
+    """Return (rgb_for_model, crop_bbox_or_None). Crops out scope vignette."""
+    y0, x0, y1, x1 = detect_scope_bbox(rgb)
+    if (y1 - y0) == rgb.shape[0] and (x1 - x0) == rgb.shape[1]:
+        return rgb, None
+    return rgb[y0:y1, x0:x1], (y0, x0, y1, x1)
+
+
 def dice(pred: np.ndarray, gt: np.ndarray) -> float:
     p, g = pred.astype(bool), gt.astype(bool)
     inter = np.logical_and(p, g).sum()
@@ -75,7 +100,8 @@ def run(proc, samples, ds_name: str) -> dict:
     pred_dir.mkdir(parents=True, exist_ok=True)
 
     for image_id, rgb, gt in tqdm(samples, desc=f"{APPROACH}/{ds_name}"):
-        pil = Image.fromarray(rgb)
+        rgb_in, crop = preprocess(rgb)
+        pil = Image.fromarray(rgb_in)
         t0 = time.perf_counter()
         with torch.inference_mode(), torch.amp.autocast("cuda", dtype=torch.bfloat16):
             state = proc.set_image(pil)
@@ -91,7 +117,16 @@ def run(proc, samples, ds_name: str) -> dict:
             pred = np.zeros_like(gt, dtype=bool)
         else:
             top = int(scores.argmax())
-            pred = masks[top].astype(bool)
+            pred_local = masks[top].astype(bool)
+            if crop is None:
+                pred = pred_local
+            else:
+                y0, x0, y1, x1 = crop
+                if pred_local.shape != (y1 - y0, x1 - x0):
+                    pred_local = cv2.resize(pred_local.astype(np.uint8), (x1 - x0, y1 - y0),
+                                             interpolation=cv2.INTER_NEAREST) > 0
+                pred = np.zeros_like(gt, dtype=bool)
+                pred[y0:y1, x0:x1] = pred_local
             if pred.shape != gt.shape:
                 pred = cv2.resize(pred.astype(np.uint8), (gt.shape[1], gt.shape[0]),
                                   interpolation=cv2.INTER_NEAREST) > 0
