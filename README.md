@@ -1,15 +1,15 @@
 # GutCheck
 
-**Do cutting-edge vision foundation models actually help medical imaging?**
+**Does six years of progress in vision foundation models actually help on medical imaging?**
 
-A two-week exploration comparing four paradigms on colonoscopy polyp segmentation:
+A two-week comparison of four approaches on colonoscopy polyp segmentation:
 
 - **SAM 3.1** (Meta, March 2026) — text-promptable foundation model
 - **SAM 3.1 + LoRA** — the same model, adapted with 900 labeled images
 - **DINOv3 + decoder** (Meta, 2025) — self-supervised backbone + small segmentation head
 - **PraNet** (MICCAI 2020) — purpose-built specialist, the incumbent
 
-Trained on Kvasir-SEG, tested on the standard Kvasir test split (100 images) and cross-dataset on CVC-ClinicDB (62 images). Ran on a single H100.
+Trained on Kvasir-SEG, tested on the standard Kvasir test split (100 images) and cross-dataset on CVC-ClinicDB (62 images). Ran on one H100.
 
 ![Paradigm comparison with prompt ablation](docs/images/summary_with_prompt_ablation.png)
 
