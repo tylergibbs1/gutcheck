@@ -11,6 +11,8 @@ A two-week comparison of four approaches on colonoscopy polyp segmentation:
 
 Trained on Kvasir-SEG, tested on the standard Kvasir test split (100 images) and cross-dataset on CVC-ClinicDB (62 images). Ran on one H100.
 
+Jump to: [results](#headline-results) · [findings](#two-findings-worth-reading) · [reproduce](#reproduce)
+
 ![Paradigm comparison with prompt ablation](docs/images/summary_with_prompt_ablation.png)
 
 ## Headline results
@@ -79,6 +81,8 @@ gutcheck/                       # library code
         pranet.py               # PraNet repo wrapper
 
 scripts/
+    _common.py                  # shared config constants
+    download_data.sh            # Kvasir-SEG + CVC-ClinicDB download
     eval_sam_zeroshot.py        # SAM 3 (transformers) zero-shot eval
     eval_sam31_zeroshot.py      # SAM 3.1 (Meta repo) zero-shot eval — with all the keeps baked in
     train_sam_lora.py           # LoRA on SAM 3 mask decoder
@@ -93,6 +97,7 @@ scripts/
     render_agreement_heatmap.py # pixel-agreement heatmap overlays
     render_prompt_ablation.py   # prompt-ablation charts
     render_intervention_chart.py# scope-crop intervention chart
+    render_video_overlay.py     # raw-vs-overlay comparison video on a colonoscopy clip
     summary_plot.py             # original headline chart
     _run_experiment.sh          # one auto-research iteration on the pod
 
@@ -170,10 +175,6 @@ Training: Kvasir-SEG (900 images, minus the 100 PraNet test split). Test: PraNet
 - You'll need a HuggingFace token with access accepted on `facebook/sam3`, `facebook/sam3.1`, and `facebook/dinov3-vitl16-pretrain-lvd1689m` (all gated). Pass via `huggingface-cli login` — don't commit it.
 - PraNet weights and CVC-ClinicDB are mirrored on Google Drive — `gdown` is the cleanest path today; see `scripts/download_data.sh` for the exact file IDs.
 
-## License
-
-Code is MIT-licensed (see [`LICENSE`](LICENSE)). Pretrained model weights and datasets retain their original licenses — PraNet and Kvasir-SEG / CVC-ClinicDB are research-use-only, SAM 3.1 and DINOv3 are gated under Meta's own license, SAM 2.1 is Apache-2.0.
-
 ## Citations
 
 - Jha et al. 2020. *Kvasir-SEG: A Segmented Polyp Dataset.* MMM.
@@ -185,3 +186,7 @@ Code is MIT-licensed (see [`LICENSE`](LICENSE)). Pretrained model weights and da
 - Siméoni et al. 2025. *DINOv3.* Meta AI / FAIR.
 - Yang et al. 2025. *SegDINO: Efficient Segmentation with DINOv3.* arXiv:2509.00833.
 - Zhao et al. 2019. *Magnitude, Risk Factors, and Factors Associated With Adenoma Miss Rate of Tandem Colonoscopy.* Gastroenterology.
+
+## License
+
+Code is MIT-licensed (see [`LICENSE`](LICENSE)). Pretrained model weights and datasets retain their original licenses — PraNet and Kvasir-SEG / CVC-ClinicDB are research-use-only, SAM 3.1 and DINOv3 are gated under Meta's own license, SAM 2.1 is Apache-2.0.
